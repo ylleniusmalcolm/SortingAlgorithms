@@ -14,4 +14,10 @@ namespace radix
 
     void RadixSort(float *first, int length);
     void RadixSort(std::vector<float> &first);
+
+    void RadixSort(int32_t *first, int length);
+    void RadixSort(std::vector<int32_t> &first);
+    
+    void RadixSort(uint32_t *first, int length);
+    void RadixSort(std::vector<uint32_t> &first);
 }
