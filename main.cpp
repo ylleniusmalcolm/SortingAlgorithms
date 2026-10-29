@@ -1,21 +1,29 @@
-#include "stdlib.h"
+#include <cstdlib>
+#include <ctime>
 #include "radix.h"
 #include <iostream>
 
 int main()
 {
-    float* array = new float[1000];
-    for (int i = 0; i < 1000; i++)
+    int len = 5;
+    std::srand(std::time(0));
+    float* array = new float[len];
+    for (int i = 0; i < len; i++)
     {
-        array[i] = (float)(i - 500) / 50.f;
-        std::cout << array[i] << std::endl;
+        array[i] = rand() % 2 == 0 ? 1.f : -1.f;
+        array[i] *= (float)rand() / 1000.f;
     }
     
-    RadixSort(array, 1000);
-
-    for (int i = 0; i < 1000; i++)
+    for (int i = 0; i < len; i++)
     {
-        std::cout << array[i] << std::endl;
+        std::cout << i << ": " << array[i] << std::endl;
+    }
+
+    RadixSort(array, len);
+
+    for (int i = 0; i < len; i++)
+    {
+        std::cout << i << ": " << array[i] << std::endl;
     }
 
     return 0;
