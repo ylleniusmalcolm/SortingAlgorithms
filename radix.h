@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <iostream>
 
-namespace radix
+namespace radix32
 {
     const int bucketSize = 8;
     const int bucketCount = 1 << bucketSize;
@@ -20,4 +20,22 @@ namespace radix
     
     void RadixSort(uint32_t *first, int length);
     void RadixSort(std::vector<uint32_t> &first);
+}
+
+namespace radix64
+{
+    const int bucketSize = 8;
+    const int bucketCount = 1 << bucketSize;
+    const int iterations = 64 / bucketSize;
+    const uint64_t filter = bucketCount - 1;
+    const uint64_t sign = 0x8000000000000000ULL;
+
+    void RadixSort(double *first, int length);
+    void RadixSort(std::vector<double> &first);
+
+    void RadixSort(int64_t *first, int length);
+    void RadixSort(std::vector<int64_t> &first);
+    
+    void RadixSort(uint64_t *first, int length);
+    void RadixSort(std::vector<uint64_t> &first);
 }

@@ -1,32 +1,41 @@
 #include <cstdlib>
-#include <ctime>
-#include "radix.h"
+#include <time.h>
+#include <functional>
 #include <iostream>
+#include <iomanip>
 #include <vector>
+#include <sstream>
+#include "string"
+#include "radix.h"
+#include "algorithmTesting.h"
+#include "inputHandler.h"
 
 int main()
 {
-    int len = 5;
-    std::srand(std::time(0));
-    std::vector<float> array = std::vector<float>();
+    int len = InputHandler::InputInteger("Number of iterations: ", [](int v){ return v > 0; });
+    int count = InputHandler::InputInteger("Number of runs: ", [](int v){ return v > 0; });
+    std::srand(time(0));
+    std::vector<double> array = std::vector<double>();
     for (int i = 0; i < len; i++)
     {
-        int v = rand() % 2 == 0 ? 1.f : -1.f;
-        v *= (float)rand() / 1000.f;
+        double v = rand() % 2 == 0 ? 1.f : -1.f;
+        v *= (double)rand() / 1000.f;
         array.push_back(v);
     }
     
-    for (int i = 0; i < len; i++)
+    /*for (int i = 0; i < len; i++)
     {
-        std::cout << i << ": " << array[i] << std::endl;
-    }
+        std::cout << i << ": " << std::setprecision(10) << array[i] << std::endl;
+    }*/
     
-    radix::RadixSort(array);
+    time_t t = algorithmTesting::TimeFunction([&array](){radix64::RadixSort(array);}, count);
 
-    for (int i = 0; i < len; i++)
+    /*for (int i = 0; i < len; i++)
     {
-        std::cout << i << ": " << array[i] << std::endl;
-    }
+        std::cout << i << ": " << std::setprecision(10) << array[i] << std::endl;
+    }*/
+
+    std::cout << "Testing took " << t << " clicks" << " (" << (float)t / CLOCKS_PER_SEC << " seconds).\n";
 
     return 0;
 }
