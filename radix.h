@@ -2,7 +2,8 @@
 #include <vector>
 #include <cstdint>
 #include <algorithm>
-#include <iostream>
+#include <type_traits>
+#include <functional>
 
 namespace radix32
 {
@@ -38,4 +39,119 @@ namespace radix64
     
     void RadixSort(uint64_t *first, int length);
     void RadixSort(std::vector<uint64_t> &first);
+}
+
+namespace radix
+{
+    template<typename T>
+    using rType = std::conditional_t<
+        sizeof(T) == 1,
+        uint8_t,
+        std::conditional_t<
+            sizeof(T) == 2,
+            uint16_t,
+            std::conditional_t<
+                sizeof(T) == 4,
+                uint32_t,
+                std::conditional_t<
+                    sizeof(T) == 8,
+                    uint64_t,
+                    void
+                >
+            >
+        >
+    >;
+    
+
+    const int bucketSize = 8;
+    const int bucketCount = 1 << bucketSize;
+
+    template<typename T>
+    const int iterations = (sizeof(T) * 8) / bucketSize;
+    template<typename T>
+    const rType<T> signFlag = (rType<T>)1 << ((sizeof(T) * 8) - 1);    
+    template<typename T>
+    const rType<T> filter = bucketCount - 1;
+    template<typename T>
+    const rType<T> rTypeMax = ((rType<T>)0) - 1;
+
+    template<typename T>
+    inline rType<T> BitTransform(rType<T> v)
+    {
+        if constexpr(std::is_floating_point<T>::value)
+            return (v & signFlag<T>) == 0 ? v ^ signFlag<T> : v ^ rTypeMax<T>;
+        else if constexpr(std::is_integral<T>::value && std::is_signed<T>::value)
+            return v ^ signFlag<T>;
+        else
+            return v;
+    }
+
+    template<typename T>
+    void RadixSort(T* array, size_t length)
+    {
+        static_assert(std::is_arithmetic_v<T>, "Can only be used on arithmetic types.");
+
+        //Needs a second buffer.
+        T *second = new T[length];
+
+        //Precalculating how many items will be in each bucket for each iteration.
+        int *indices = new int[bucketCount * iterations<T>];
+        for (int i = 0; i < bucketCount * iterations<T>; i++)
+            indices[i] = 0;
+        for (size_t i = 0; i < length; i++)
+        {
+            rType<T> v;
+            if constexpr(std::is_floating_point<T>::value)
+            {
+                //Undefined behavior to the resuce! Taking the bit representation of the float and putting it in a uint so we can do bitwise logic.
+                v = *reinterpret_cast<rType<T>*>(&(array[i]));
+            }
+            else
+                v = array[i];
+            v = BitTransform<T>(v);
+            for (size_t j = 0; j < iterations<T>; j++)
+                indices[((v >> (j * bucketSize)) & filter<T>) + j * bucketCount]++;
+        }
+        
+
+        //Adding previous counts to each bucket to get a starting index.
+        for (int i = 0; i < iterations<T>; i++)
+        {
+            int total = 0;
+            for (int j = 0; j < bucketCount; j++)
+            {
+                indices[i * bucketCount + j] += total;
+                total = indices[i * bucketCount + j];
+            }
+        }
+
+        //Shifting all indices down one index to start at 0.
+        for (int i = 0; i < iterations<T>; i++)
+        {
+            for (int j = bucketCount - 1; j > 0; j--)    
+                indices[i * bucketCount + j] = indices[i * bucketCount + j - 1];
+            indices[i * bucketCount] = 0;
+        }        
+
+        //Sorting with buckets!!
+        for (int i = 0; i < iterations<T>; i++)
+        {
+            for (size_t j = 0; j < length; j++)
+            {
+                rType<T> v;
+                if constexpr(std::is_floating_point<T>::value)
+                    v = *reinterpret_cast<rType<T>*>(&(array[j]));
+                else
+                    v = array[j];
+                v = BitTransform<T>(v);
+                v = (v >> (i * bucketSize)) & filter<T>;
+                second[indices[v + i * bucketCount]] = array[j];
+                indices[v + i * bucketCount]++;
+            }
+            std::swap(array, second);
+        }    
+
+        delete second;
+        delete indices;
+    }
 }
