@@ -62,7 +62,6 @@ namespace radix
         >
     >;
     
-
     const int bucketSize = 8;
     const int bucketCount = 1 << bucketSize;
 
@@ -87,7 +86,7 @@ namespace radix
     }
 
     template<typename T>
-    void RadixSort(T* array, size_t length)
+    void RadixSort(T* first, size_t length)
     {
         static_assert(std::is_arithmetic_v<T>, "Can only be used on arithmetic types.");
 
@@ -104,10 +103,10 @@ namespace radix
             if constexpr(std::is_floating_point<T>::value)
             {
                 //Undefined behavior to the resuce! Taking the bit representation of the float and putting it in a uint so we can do bitwise logic.
-                v = *reinterpret_cast<rType<T>*>(&(array[i]));
+                v = *reinterpret_cast<rType<T>*>(&(first[i]));
             }
             else
-                v = array[i];
+                v = first[i];
             v = BitTransform<T>(v);
             for (size_t j = 0; j < iterations<T>; j++)
                 indices[((v >> (j * bucketSize)) & filter<T>) + j * bucketCount]++;
@@ -140,18 +139,87 @@ namespace radix
             {
                 rType<T> v;
                 if constexpr(std::is_floating_point<T>::value)
-                    v = *reinterpret_cast<rType<T>*>(&(array[j]));
+                    v = *reinterpret_cast<rType<T>*>(&(first[j]));
                 else
-                    v = array[j];
+                    v = first[j];
                 v = BitTransform<T>(v);
                 v = (v >> (i * bucketSize)) & filter<T>;
-                second[indices[v + i * bucketCount]] = array[j];
+                second[indices[v + i * bucketCount]] = first[j];
                 indices[v + i * bucketCount]++;
             }
-            std::swap(array, second);
+            std::swap(first, second);
         }    
 
         delete second;
+        delete indices;
+    }
+
+    template<typename T>
+    void RadixSort(std::vector<T> &first)
+    {
+        static_assert(std::is_arithmetic_v<T>, "Can only be used on arithmetic types.");
+
+        //Needs a second buffer.
+        std::vector<T> second = std::vector<T>();
+        second.resize(first.size());
+
+        //Precalculating how many items will be in each bucket for each iteration.
+        int *indices = new int[bucketCount * iterations<T>];
+        for (int i = 0; i < bucketCount * iterations<T>; i++)
+            indices[i] = 0;
+        for (size_t i = 0; i < first.size(); i++)
+        {
+            rType<T> v;
+            if constexpr(std::is_floating_point<T>::value)
+            {
+                //Undefined behavior to the resuce! Taking the bit representation of the float and putting it in a uint so we can do bitwise logic.
+                v = *reinterpret_cast<rType<T>*>(&(first[i]));
+            }
+            else
+                v = first[i];
+            v = BitTransform<T>(v);
+            for (size_t j = 0; j < iterations<T>; j++)
+                indices[((v >> (j * bucketSize)) & filter<T>) + j * bucketCount]++;
+        }
+        
+
+        //Adding previous counts to each bucket to get a starting index.
+        for (int i = 0; i < iterations<T>; i++)
+        {
+            int total = 0;
+            for (int j = 0; j < bucketCount; j++)
+            {
+                indices[i * bucketCount + j] += total;
+                total = indices[i * bucketCount + j];
+            }
+        }
+
+        //Shifting all indices down one index to start at 0.
+        for (int i = 0; i < iterations<T>; i++)
+        {
+            for (int j = bucketCount - 1; j > 0; j--)    
+                indices[i * bucketCount + j] = indices[i * bucketCount + j - 1];
+            indices[i * bucketCount] = 0;
+        }        
+
+        //Sorting with buckets!!
+        for (int i = 0; i < iterations<T>; i++)
+        {
+            for (size_t j = 0; j < first.size(); j++)
+            {
+                rType<T> v;
+                if constexpr(std::is_floating_point<T>::value)
+                    v = *reinterpret_cast<rType<T>*>(&(first[j]));
+                else
+                    v = first[j];
+                v = BitTransform<T>(v);
+                v = (v >> (i * bucketSize)) & filter<T>;
+                second[indices[v + i * bucketCount]] = first[j];
+                indices[v + i * bucketCount]++;
+            }
+            std::swap(first, second);
+        }    
+
         delete indices;
     }
 }

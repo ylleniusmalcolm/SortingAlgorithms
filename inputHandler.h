@@ -6,13 +6,16 @@ namespace InputHandler
 {
     std::istringstream Input(const std::string prompt);
 
-    template<typename T>
-    int InputInteger(const std::string prompt, T&& additionalValidation = [](int){return true;})
+    template <typename T, typename U>
+    T InputT(const std::string prompt, U&& additionalValidation = [](T){return true;}, std::string additionalValidationFailText = "")
     {
         std::istringstream input = Input(prompt);
-        int v;
-        if ((input >> v) && (input >> std::ws).eof() && additionalValidation(v))
-            return v;
-        throw std::runtime_error("Unexpected input.");
+        T v;
+        if (!((input >> v) && (input >> std::ws).eof()))
+            throw std::runtime_error("Input cannot be parsed to correct type.");
+        else if (!additionalValidation(v))
+            throw std::runtime_error(additionalValidationFailText);
+        
+        return v;    
     }
 }

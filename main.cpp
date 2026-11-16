@@ -4,38 +4,34 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
-#include <sstream>
-#include "string"
+#include <cstdint>
 #include "radix.h"
 #include "algorithmTesting.h"
 #include "inputHandler.h"
 
 int main()
 {
-    int len = InputHandler::InputInteger("Number of iterations: ", [](int v){ return v > 0; });
-    int count = InputHandler::InputInteger("Number of runs: ", [](int v){ return v > 0; });
+    int len = InputHandler::InputT<int>("Number of iterations: ", [](int v){ return v > 0; }, "Value must be greater than 0.");
+    int count = InputHandler::InputT<int>("Number of runs: ", [](int v){ return v > 0; }, "Value must be greater than 0.");
     std::srand(time(0));
-    double* array = new double[len];
-    for (int i = 0; i < len; i++)
-    {
-        double v = rand() % 2 == 0 ? 1.f : -1.f;
-        v *= (double)rand() / 1000.f;
-        array[i] = v;
-    }
-
-    time_t t = algorithmTesting::TimeFunction([&array, len](){radix::RadixSort<double>(array, len);}, count);
-
-    std::cout << "Testing took " << t << " clicks" << " (" << (float)t / CLOCKS_PER_SEC << " seconds).\n";
-    std::cout << "That's " << (float)t / (CLOCKS_PER_SEC) /
-        (float)count << " seconds per run at " << std::setprecision(3) << (float)(len * count) /
-        ((float)t / CLOCKS_PER_SEC) << " iterations per second." << std::endl;
-
+    std::vector<double> array = std::vector<double>();
 
     for (int i = 0; i < len; i++)
     {
-        std::cout << array[i] << std::endl;
+        array.push_back((double)(rand() * rand() % 2 == 0 ? 1 : -1) / 100.f);
     }
-    
+
+    int64_t t = algorithmTesting::TimeFunction([&array](){radix::RadixSort<double>(array);}, count);
+
+    if (!algorithmTesting::VerifyArray<double>(array))
+        std::cout << "Sorting failed\n";
+    else
+    {
+        std::cout << "Testing took " << t << " clicks" << " (" << (double)t / CLOCKS_PER_SEC << " seconds).\n";
+        std::cout << "That's " << (double)t / (CLOCKS_PER_SEC) /
+            (double)count << " seconds per run at " << std::setprecision(3) << (double)(len * count) /
+            ((double)t / CLOCKS_PER_SEC) << " iterations per second." << std::endl;    
+    }    
 
     return 0;
 }
