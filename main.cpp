@@ -21,7 +21,7 @@ int main()
         array.push_back((double)(rand() * rand() % 2 == 0 ? 1 : -1) / 100.f);
     }
 
-    int64_t t = algorithmTesting::TimeFunction([&array](){radix::RadixSort<double>(array);}, count);
+    int64_t t = algorithmTesting::TimeFunction([&array](){radix::RadixSort(array);}, count);
 
     if (!algorithmTesting::VerifyArray<double>(array))
         std::cout << "Sorting failed\n";
